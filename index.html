@@ -1,0 +1,74 @@
+<!DOCTYPE html><html>
+<head>
+    <meta charset="UTF-8">
+    <title>Web3 RPG 2D Demo</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; }
+        #connectWallet { position: absolute; top: 10px; left: 10px; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <button id="connectWallet">Connect Wallet</button><script>
+    // Basic Phaser config
+    const config = {
+        type: Phaser.AUTO,
+        width: 800,
+        height: 600,
+        scene: {
+            preload: preload,
+            create: create,
+            update: update
+        }
+    };
+
+    let player;
+    let cursors;
+
+    const game = new Phaser.Game(config);
+
+    function preload() {
+        this.load.image('background', 'https://i.imgur.com/3e5ZtDf.png');
+        this.load.image('player', 'https://i.imgur.com/bFbcP2F.png');
+    }
+
+    function create() {
+        this.add.image(400, 300, 'background');
+        player = this.physics.add.image(400, 300, 'player');
+        cursors = this.input.keyboard.createCursorKeys();
+    }
+
+    function update() {
+        player.setVelocity(0);
+
+        if (cursors.left.isDown) {
+            player.setVelocityX(-160);
+        } else if (cursors.right.isDown) {
+            player.setVelocityX(160);
+        }
+
+        if (cursors.up.isDown) {
+            player.setVelocityY(-160);
+        } else if (cursors.down.isDown) {
+            player.setVelocityY(160);
+        }
+    }
+
+    // Web3 Wallet Connection
+    document.getElementById('connectWallet').addEventListener('click', async () => {
+        if (typeof window.ethereum !== 'undefined') {
+            try {
+                const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+                alert('Wallet Connected: ' + accounts[0]);
+            } catch (err) {
+                console.error(err);
+            }
+        } else {
+            alert('MetaMask is not installed!');
+        }
+    });
+</script>
+
+</body>
+  </html>
