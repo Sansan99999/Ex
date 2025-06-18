@@ -1,21 +1,33 @@
 <!DOCTYPE html><html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web3 RPG 2D Demo</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <style>
         body { margin: 0; padding: 0; overflow: hidden; }
-        #connectWallet { position: absolute; top: 10px; left: 10px; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 5px; }
+        #connectWallet { position: absolute; top: 10px; left: 10px; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 5px; z-index: 1; }
+        canvas { display: block; width: 100% !important; height: 100% !important; }
     </style>
 </head>
 <body>
     <button id="connectWallet">Connect Wallet</button><script>
-    // Basic Phaser config
+    // Get window size for responsive design
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+
+    // Basic Phaser config for mobile view
     const config = {
         type: Phaser.AUTO,
-        width: 800,
-        height: 600,
+        width: windowWidth,
+        height: windowHeight,
+        physics: {
+            default: 'arcade',
+            arcade: {
+                debug: false
+            }
+        },
         scene: {
             preload: preload,
             create: create,
@@ -34,8 +46,8 @@
     }
 
     function create() {
-        this.add.image(400, 300, 'background');
-        player = this.physics.add.image(400, 300, 'player');
+        this.add.image(config.width / 2, config.height / 2, 'background').setDisplaySize(config.width, config.height);
+        player = this.physics.add.image(config.width / 2, config.height / 2, 'player').setScale(1.5);
         cursors = this.input.keyboard.createCursorKeys();
     }
 
@@ -68,7 +80,12 @@
             alert('MetaMask is not installed!');
         }
     });
+
+    // Resize the game when the window size changes
+    window.addEventListener('resize', () => {
+        game.scale.resize(window.innerWidth, window.innerHeight);
+    });
 </script>
 
 </body>
-  </html>
+</html>
