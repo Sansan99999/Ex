@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html>
+<!DOCTYPE html><html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,28 +6,39 @@
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <style>
-        body { margin: 0; padding: 0; overflow: hidden; }
-        #connectWallet, #rollDice {
+        body { margin: 0; padding: 0; overflow: hidden; background: #0f0f0f; font-family: Arial, sans-serif; }
+        #connectWallet, #rollDice, #betBig, #betSmall, #betTriple {
             position: absolute;
-            top: 10px;
             padding: 10px 20px;
             background: #4CAF50;
             color: white;
             border: none;
             border-radius: 5px;
             z-index: 1;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
         }
-        #connectWallet { left: 10px; }
-        #rollDice { right: 10px; }
+        #connectWallet { top: 10px; left: 10px; }
+        #rollDice { top: 10px; right: 10px; }
+        #betBig { bottom: 80px; left: 10px; }
+        #betSmall { bottom: 80px; right: 10px; }
+        #betTriple { bottom: 80px; left: 50%; transform: translateX(-50%); }
+        #walletInfo {
+            position: absolute;
+            top: 50px;
+            left: 10px;
+            color: white;
+            z-index: 1;
+        }
         canvas { display: block; width: 100% !important; height: 100% !important; }
     </style>
 </head>
-<body>
+<body><button id="connectWallet">Connect Wallet</button> <button id="rollDice">Roll Dice</button> <button id="betBig">Bet Big</button> <button id="betSmall">Bet Small</button> <button id="betTriple">Bet Triple</button>
 
-<button id="connectWallet">Connect Wallet</button>
-<button id="rollDice">Roll Dice</button>
+<div id="walletInfo">Wallet: Not Connected</div><script>
+    let selectedBet = null;
+    let userWallet = null;
 
-<script>
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
 
@@ -57,7 +67,7 @@
     const game = new Phaser.Game(config);
 
     function preload() {
-        this.load.image('table', 'https://upload.wikimedia.org/wikipedia/commons/a/a2/Green_Baize_Table.jpg');
+        this.load.image('table', 'https://i.ibb.co/SVZhcLK/sicbo-table.jpg');
         for (let i = 1; i <= 6; i++) {
             this.load.image('dice' + i, diceFaces[i - 1]);
         }
@@ -66,16 +76,16 @@
     function create() {
         this.add.image(config.width / 2, config.height / 2, 'table').setDisplaySize(config.width, config.height);
 
-        // Add dice to the table
         for (let i = 0; i < 3; i++) {
-            let die = this.add.image(config.width / 4 + i * (config.width / 4), config.height / 2, 'dice1').setScale(0.5);
+            let die = this.add.image(config.width / 4 + i * (config.width / 4), config.height / 2, 'dice1').setScale(0.4);
             dice.push(die);
         }
 
         resultText = this.add.text(config.width / 2, config.height * 0.8, '', { fontSize: '32px', color: '#ffffff' }).setOrigin(0.5);
 
         document.getElementById('rollDice').addEventListener('click', () => {
-            if (!rolling) rollDice(this);
+            if (!rolling && selectedBet) rollDice(this);
+            else if (!selectedBet) alert('Please place a bet first!');
         });
     }
 
@@ -83,7 +93,7 @@
         rolling = true;
         resultText.setText('');
 
-        let rollTimes = 30; // number of frame updates
+        let rollTimes = 30;
         let frame = 0;
 
         let interval = setInterval(() => {
@@ -108,10 +118,16 @@
 
         if (diceValues[0] === diceValues[1] && diceValues[1] === diceValues[2]) {
             result += 'Triple!';
+            if (selectedBet === 'triple') alert('You win!');
+            else alert('You lose!');
         } else if (total >= 11 && total <= 17) {
             result += 'Big';
+            if (selectedBet === 'big') alert('You win!');
+            else alert('You lose!');
         } else if (total >= 4 && total <= 10) {
             result += 'Small';
+            if (selectedBet === 'small') alert('You win!');
+            else alert('You lose!');
         } else {
             result += 'Invalid';
         }
@@ -121,12 +137,12 @@
 
     function update() {}
 
-    // Web3 Wallet Connection
     document.getElementById('connectWallet').addEventListener('click', async () => {
         if (typeof window.ethereum !== 'undefined') {
             try {
                 const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
-                alert('Wallet Connected: ' + accounts[0]);
+                userWallet = accounts[0];
+                document.getElementById('walletInfo').innerText = 'Wallet: ' + userWallet;
             } catch (err) {
                 console.error(err);
             }
@@ -135,10 +151,23 @@
         }
     });
 
+    document.getElementById('betBig').addEventListener('click', () => {
+        selectedBet = 'big';
+        alert('You bet on Big');
+    });
+
+    document.getElementById('betSmall').addEventListener('click', () => {
+        selectedBet = 'small';
+        alert('You bet on Small');
+    });
+
+    document.getElementById('betTriple').addEventListener('click', () => {
+        selectedBet = 'triple';
+        alert('You bet on Triple');
+    });
+
     window.addEventListener('resize', () => {
         game.scale.resize(window.innerWidth, window.innerHeight);
     });
-</script>
-
-</body>
+</script></body>
 </html>
