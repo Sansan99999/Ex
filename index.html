@@ -1,173 +1,115 @@
-<!DOCTYPE html><html>
+<!DOCTYPE html>
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sicbo Web3 - Monad Testnet</title>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-    <style>
-        body { margin: 0; padding: 0; overflow: hidden; background: #0f0f0f; font-family: Arial, sans-serif; }
-        #connectWallet, #rollDice, #betBig, #betSmall, #betTriple {
-            position: absolute;
-            padding: 10px 20px;
-            background: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            z-index: 1;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-        }
-        #connectWallet { top: 10px; left: 10px; }
-        #rollDice { top: 10px; right: 10px; }
-        #betBig { bottom: 80px; left: 10px; }
-        #betSmall { bottom: 80px; right: 10px; }
-        #betTriple { bottom: 80px; left: 50%; transform: translateX(-50%); }
-        #walletInfo {
-            position: absolute;
-            top: 50px;
-            left: 10px;
-            color: white;
-            z-index: 1;
-        }
-        canvas { display: block; width: 100% !important; height: 100% !important; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sicbo Web3 - Gambar Dadu Online</title>
+  <style>
+    body { margin:0; padding:0; background:#111; color:#eee; font-family:sans-serif; text-align:center; }
+    button { margin:10px; padding:10px 20px; background:green; color:white; border:none; border-radius:4px; cursor:pointer; }
+    #dice-container { display:flex; justify-content:center; margin:20px 0; }
+    .dice-img { width:80px; height:80px; margin:0 5px; }
+  </style>
 </head>
-<body><button id="connectWallet">Connect Wallet</button> <button id="rollDice">Roll Dice</button> <button id="betBig">Bet Big</button> <button id="betSmall">Bet Small</button> <button id="betTriple">Bet Triple</button>
+<body>
 
-<div id="walletInfo">Wallet: Not Connected</div><script>
-    let selectedBet = null;
-    let userWallet = null;
+  <h1>Sicbo Game Web3 🎲</h1>
 
-    const windowWidth = window.innerWidth;
-    const windowHeight = window.innerHeight;
+  <!-- Connect Wallet -->
+  <button onclick="connectWallet()">Connect Wallet</button>
+  <div id="wallet" style="margin: 10px;"></div>
 
-    const config = {
-        type: Phaser.AUTO,
-        width: windowWidth,
-        height: windowHeight,
-        physics: { default: 'arcade' },
-        scene: { preload, create, update }
-    };
+  <!-- Suara Dadu -->
+  <audio id="diceSound" src="dice-sound.mp3" preload="auto"></audio>
 
-    let dice = [];
-    let rolling = false;
-    let diceValues = [1, 1, 1];
-    let resultText;
+  <!-- Roll Dice -->
+  <button onclick="rollDice()">Roll Dice</button>
 
-    const diceFaces = [
-        'https://upload.wikimedia.org/wikipedia/commons/1/1b/Dice-1-b.svg',
-        'https://upload.wikimedia.org/wikipedia/commons/5/5f/Dice-2-b.svg',
-        'https://upload.wikimedia.org/wikipedia/commons/b/b1/Dice-3-b.svg',
-        'https://upload.wikimedia.org/wikipedia/commons/f/f4/Dice-4-b.svg',
-        'https://upload.wikimedia.org/wikipedia/commons/0/08/Dice-5-b.svg',
-        'https://upload.wikimedia.org/wikipedia/commons/2/26/Dice-6-b.svg'
-    ];
+  <!-- Display Dadu -->
+  <div id="dice-container">
+    <img id="d1" class="dice-img" src="" alt="Dice 1">
+    <img id="d2" class="dice-img" src="" alt="Dice 2">
+    <img id="d3" class="dice-img" src="" alt="Dice 3">
+  </div>
 
-    const game = new Phaser.Game(config);
+  <!-- Hasil Dadu -->
+  <div id="result" style="font-size:1.2em; margin-top:10px;"></div>
 
-    function preload() {
-        this.load.image('table', 'https://i.ibb.co/SVZhcLK/sicbo-table.jpg');
-        for (let i = 1; i <= 6; i++) {
-            this.load.image('dice' + i, diceFaces[i - 1]);
-        }
+  <!-- Taruhan -->
+  <div style="margin-top: 20px;">
+    <button onclick="bet('Big')">Bet Big</button>
+    <button onclick="bet('Small')">Bet Small</button>
+    <button onclick="bet('Triple')">Bet Triple</button>
+  </div>
+  <div id="betResult" style="margin-top: 10px;"></div>
+
+<script>
+  // Link Gambar Dadu dari Wikipedia
+  const diceLinks = {
+    1: "https://upload.wikimedia.org/wikipedia/commons/1/1b/Dice-1-b.svg",
+    2: "https://upload.wikimedia.org/wikipedia/commons/5/5f/Dice-2-b.svg",
+    3: "https://upload.wikimedia.org/wikipedia/commons/b/b1/Dice-3-b.svg",
+    4: "https://upload.wikimedia.org/wikipedia/commons/f/fd/Dice-4-b.svg",
+    5: "https://upload.wikimedia.org/wikipedia/commons/0/08/Dice-5-b.svg",
+    6: "https://upload.wikimedia.org/wikipedia/commons/2/26/Dice-6-b.svg"
+  };
+
+  let currentBet = "";
+
+  // Fungsi Roll Dadu
+  function rollDice() {
+    document.getElementById('diceSound').play(); // Putar suara dadu
+
+    const d1 = Math.floor(Math.random() * 6) + 1;
+    const d2 = Math.floor(Math.random() * 6) + 1;
+    const d3 = Math.floor(Math.random() * 6) + 1;
+
+    document.getElementById("d1").src = diceLinks[d1];
+    document.getElementById("d2").src = diceLinks[d2];
+    document.getElementById("d3").src = diceLinks[d3];
+
+    const total = d1 + d2 + d3;
+    let outcome = "";
+
+    if (d1 === d2 && d2 === d3) outcome = "Triple!";
+    else if (total <= 10) outcome = "Small";
+    else outcome = "Big";
+
+    document.getElementById("result").textContent = `Roll: ${d1}, ${d2}, ${d3} → Total: ${total} (${outcome})`;
+
+    if (currentBet) {
+      let win = false;
+      if (outcome === currentBet) {
+        win = true;
+      }
+      alert(win ? 'You win!' : 'You lose!');
     }
+  }
 
-    function create() {
-        this.add.image(config.width / 2, config.height / 2, 'table').setDisplaySize(config.width, config.height);
+  // Fungsi Pilih Taruhan
+  function bet(type) {
+    currentBet = type;
+    document.getElementById('betResult').innerText = `You bet: ${type}`;
+  }
 
-        for (let i = 0; i < 3; i++) {
-            let die = this.add.image(config.width / 4 + i * (config.width / 4), config.height / 2, 'dice1').setScale(0.4);
-            dice.push(die);
-        }
-
-        resultText = this.add.text(config.width / 2, config.height * 0.8, '', { fontSize: '32px', color: '#ffffff' }).setOrigin(0.5);
-
-        document.getElementById('rollDice').addEventListener('click', () => {
-            if (!rolling && selectedBet) rollDice(this);
-            else if (!selectedBet) alert('Please place a bet first!');
-        });
+  // Fungsi Connect Wallet
+  async function connectWallet() {
+    if (typeof window.ethereum !== 'undefined') {
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        document.getElementById('wallet').innerText = `Connected: ${accounts[0]}`;
+      } catch (error) {
+        console.error(error);
+        alert('Wallet connection failed.');
+      }
+    } else {
+      alert('Please install MetaMask first.');
     }
+  }
 
-    function rollDice(scene) {
-        rolling = true;
-        resultText.setText('');
+  // Inisialisasi gambar dadu saat load
+  rollDice();
+</script>
 
-        let rollTimes = 30;
-        let frame = 0;
-
-        let interval = setInterval(() => {
-            for (let i = 0; i < 3; i++) {
-                let randomFace = Phaser.Math.Between(1, 6);
-                dice[i].setTexture('dice' + randomFace);
-                diceValues[i] = randomFace;
-            }
-            frame++;
-
-            if (frame >= rollTimes) {
-                clearInterval(interval);
-                rolling = false;
-                checkResult();
-            }
-        }, 50);
-    }
-
-    function checkResult() {
-        const total = diceValues[0] + diceValues[1] + diceValues[2];
-        let result = 'Total: ' + total + ' - ';
-
-        if (diceValues[0] === diceValues[1] && diceValues[1] === diceValues[2]) {
-            result += 'Triple!';
-            if (selectedBet === 'triple') alert('You win!');
-            else alert('You lose!');
-        } else if (total >= 11 && total <= 17) {
-            result += 'Big';
-            if (selectedBet === 'big') alert('You win!');
-            else alert('You lose!');
-        } else if (total >= 4 && total <= 10) {
-            result += 'Small';
-            if (selectedBet === 'small') alert('You win!');
-            else alert('You lose!');
-        } else {
-            result += 'Invalid';
-        }
-
-        resultText.setText(result);
-    }
-
-    function update() {}
-
-    document.getElementById('connectWallet').addEventListener('click', async () => {
-        if (typeof window.ethereum !== 'undefined') {
-            try {
-                const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
-                userWallet = accounts[0];
-                document.getElementById('walletInfo').innerText = 'Wallet: ' + userWallet;
-            } catch (err) {
-                console.error(err);
-            }
-        } else {
-            alert('MetaMask is not installed!');
-        }
-    });
-
-    document.getElementById('betBig').addEventListener('click', () => {
-        selectedBet = 'big';
-        alert('You bet on Big');
-    });
-
-    document.getElementById('betSmall').addEventListener('click', () => {
-        selectedBet = 'small';
-        alert('You bet on Small');
-    });
-
-    document.getElementById('betTriple').addEventListener('click', () => {
-        selectedBet = 'triple';
-        alert('You bet on Triple');
-    });
-
-    window.addEventListener('resize', () => {
-        game.scale.resize(window.innerWidth, window.innerHeight);
-    });
-</script></body>
+</body>
 </html>
