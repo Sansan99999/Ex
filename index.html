@@ -1,42 +1,34 @@
-<!DOCTYPE html><html>
+<!DOCTYPE html>
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web3 RPG 2D Demo - Mobile</title>
+    <title>Sicbo Web3 - Monad Testnet</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <style>
         body { margin: 0; padding: 0; overflow: hidden; }
-        #connectWallet { position: absolute; top: 10px; left: 10px; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 5px; z-index: 1; }
-        canvas { display: block; width: 100% !important; height: 100% !important; }
-        .mobile-controls {
+        #connectWallet, #rollDice {
             position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 10px;
+            top: 10px;
+            padding: 10px 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
             z-index: 1;
         }
-        .control-button {
-            width: 60px;
-            height: 60px;
-            background-color: rgba(0, 0, 0, 0.5);
-            color: white;
-            font-size: 24px;
-            border: none;
-            border-radius: 50%;
-        }
+        #connectWallet { left: 10px; }
+        #rollDice { right: 10px; }
+        canvas { display: block; width: 100% !important; height: 100% !important; }
     </style>
 </head>
 <body>
-    <button id="connectWallet">Connect Wallet</button>
-    <div class="mobile-controls">
-        <button class="control-button" id="left">⬅️</button>
-        <button class="control-button" id="up">⬆️</button>
-        <button class="control-button" id="down">⬇️</button>
-        <button class="control-button" id="right">➡️</button>
-    </div><script>
+
+<button id="connectWallet">Connect Wallet</button>
+<button id="rollDice">Roll Dice</button>
+
+<script>
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
 
@@ -44,66 +36,90 @@
         type: Phaser.AUTO,
         width: windowWidth,
         height: windowHeight,
-        physics: {
-            default: 'arcade',
-            arcade: {
-                debug: false
-            }
-        },
-        scene: {
-            preload: preload,
-            create: create,
-            update: update
-        }
+        physics: { default: 'arcade' },
+        scene: { preload, create, update }
     };
 
-    let player;
-    let cursors;
-    let velocity = { x: 0, y: 0 };
+    let dice = [];
+    let rolling = false;
+    let diceValues = [1, 1, 1];
+    let resultText;
+
+    const diceFaces = [
+        'https://upload.wikimedia.org/wikipedia/commons/1/1b/Dice-1-b.svg',
+        'https://upload.wikimedia.org/wikipedia/commons/5/5f/Dice-2-b.svg',
+        'https://upload.wikimedia.org/wikipedia/commons/b/b1/Dice-3-b.svg',
+        'https://upload.wikimedia.org/wikipedia/commons/f/f4/Dice-4-b.svg',
+        'https://upload.wikimedia.org/wikipedia/commons/0/08/Dice-5-b.svg',
+        'https://upload.wikimedia.org/wikipedia/commons/2/26/Dice-6-b.svg'
+    ];
 
     const game = new Phaser.Game(config);
 
     function preload() {
-        this.load.image('background', 'https://labs.phaser.io/assets/skies/sky4.png');
-        this.load.image('player', 'https://labs.phaser.io/assets/sprites/phaser-dude.png');
+        this.load.image('table', 'https://upload.wikimedia.org/wikipedia/commons/a/a2/Green_Baize_Table.jpg');
+        for (let i = 1; i <= 6; i++) {
+            this.load.image('dice' + i, diceFaces[i - 1]);
+        }
     }
 
     function create() {
-        this.add.image(config.width / 2, config.height / 2, 'background').setDisplaySize(config.width, config.height);
-        player = this.physics.add.image(config.width / 2, config.height / 2, 'player').setScale(0.5);
-        cursors = this.input.keyboard.createCursorKeys();
+        this.add.image(config.width / 2, config.height / 2, 'table').setDisplaySize(config.width, config.height);
 
-        // Mobile controls
-        document.getElementById('left').addEventListener('touchstart', () => velocity.x = -160);
-        document.getElementById('right').addEventListener('touchstart', () => velocity.x = 160);
-        document.getElementById('up').addEventListener('touchstart', () => velocity.y = -160);
-        document.getElementById('down').addEventListener('touchstart', () => velocity.y = 160);
-
-        document.getElementById('left').addEventListener('touchend', () => velocity.x = 0);
-        document.getElementById('right').addEventListener('touchend', () => velocity.x = 0);
-        document.getElementById('up').addEventListener('touchend', () => velocity.y = 0);
-        document.getElementById('down').addEventListener('touchend', () => velocity.y = 0);
-    }
-
-    function update() {
-        player.setVelocity(0);
-
-        if (cursors.left.isDown) {
-            player.setVelocityX(-160);
-        } else if (cursors.right.isDown) {
-            player.setVelocityX(160);
-        } else {
-            player.setVelocityX(velocity.x);
+        // Add dice to the table
+        for (let i = 0; i < 3; i++) {
+            let die = this.add.image(config.width / 4 + i * (config.width / 4), config.height / 2, 'dice1').setScale(0.5);
+            dice.push(die);
         }
 
-        if (cursors.up.isDown) {
-            player.setVelocityY(-160);
-        } else if (cursors.down.isDown) {
-            player.setVelocityY(160);
-        } else {
-            player.setVelocityY(velocity.y);
-        }
+        resultText = this.add.text(config.width / 2, config.height * 0.8, '', { fontSize: '32px', color: '#ffffff' }).setOrigin(0.5);
+
+        document.getElementById('rollDice').addEventListener('click', () => {
+            if (!rolling) rollDice(this);
+        });
     }
+
+    function rollDice(scene) {
+        rolling = true;
+        resultText.setText('');
+
+        let rollTimes = 30; // number of frame updates
+        let frame = 0;
+
+        let interval = setInterval(() => {
+            for (let i = 0; i < 3; i++) {
+                let randomFace = Phaser.Math.Between(1, 6);
+                dice[i].setTexture('dice' + randomFace);
+                diceValues[i] = randomFace;
+            }
+            frame++;
+
+            if (frame >= rollTimes) {
+                clearInterval(interval);
+                rolling = false;
+                checkResult();
+            }
+        }, 50);
+    }
+
+    function checkResult() {
+        const total = diceValues[0] + diceValues[1] + diceValues[2];
+        let result = 'Total: ' + total + ' - ';
+
+        if (diceValues[0] === diceValues[1] && diceValues[1] === diceValues[2]) {
+            result += 'Triple!';
+        } else if (total >= 11 && total <= 17) {
+            result += 'Big';
+        } else if (total >= 4 && total <= 10) {
+            result += 'Small';
+        } else {
+            result += 'Invalid';
+        }
+
+        resultText.setText(result);
+    }
+
+    function update() {}
 
     // Web3 Wallet Connection
     document.getElementById('connectWallet').addEventListener('click', async () => {
