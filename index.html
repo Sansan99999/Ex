@@ -2,22 +2,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web3 RPG 2D Demo</title>
+    <title>Web3 RPG 2D Demo - Mobile</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <style>
         body { margin: 0; padding: 0; overflow: hidden; }
         #connectWallet { position: absolute; top: 10px; left: 10px; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 5px; z-index: 1; }
         canvas { display: block; width: 100% !important; height: 100% !important; }
+        .mobile-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 1;
+        }
+        .control-button {
+            width: 60px;
+            height: 60px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            font-size: 24px;
+            border: none;
+            border-radius: 50%;
+        }
     </style>
 </head>
 <body>
-    <button id="connectWallet">Connect Wallet</button><script>
-    // Get window size for responsive design
+    <button id="connectWallet">Connect Wallet</button>
+    <div class="mobile-controls">
+        <button class="control-button" id="left">⬅️</button>
+        <button class="control-button" id="up">⬆️</button>
+        <button class="control-button" id="down">⬇️</button>
+        <button class="control-button" id="right">➡️</button>
+    </div><script>
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
 
-    // Basic Phaser config for mobile view
     const config = {
         type: Phaser.AUTO,
         width: windowWidth,
@@ -37,18 +59,30 @@
 
     let player;
     let cursors;
+    let velocity = { x: 0, y: 0 };
 
     const game = new Phaser.Game(config);
 
     function preload() {
-        this.load.image('background', 'https://i.imgur.com/3e5ZtDf.png');
-        this.load.image('player', 'https://i.imgur.com/bFbcP2F.png');
+        this.load.image('background', 'https://labs.phaser.io/assets/skies/sky4.png');
+        this.load.image('player', 'https://labs.phaser.io/assets/sprites/phaser-dude.png');
     }
 
     function create() {
         this.add.image(config.width / 2, config.height / 2, 'background').setDisplaySize(config.width, config.height);
-        player = this.physics.add.image(config.width / 2, config.height / 2, 'player').setScale(1.5);
+        player = this.physics.add.image(config.width / 2, config.height / 2, 'player').setScale(0.5);
         cursors = this.input.keyboard.createCursorKeys();
+
+        // Mobile controls
+        document.getElementById('left').addEventListener('touchstart', () => velocity.x = -160);
+        document.getElementById('right').addEventListener('touchstart', () => velocity.x = 160);
+        document.getElementById('up').addEventListener('touchstart', () => velocity.y = -160);
+        document.getElementById('down').addEventListener('touchstart', () => velocity.y = 160);
+
+        document.getElementById('left').addEventListener('touchend', () => velocity.x = 0);
+        document.getElementById('right').addEventListener('touchend', () => velocity.x = 0);
+        document.getElementById('up').addEventListener('touchend', () => velocity.y = 0);
+        document.getElementById('down').addEventListener('touchend', () => velocity.y = 0);
     }
 
     function update() {
@@ -58,12 +92,16 @@
             player.setVelocityX(-160);
         } else if (cursors.right.isDown) {
             player.setVelocityX(160);
+        } else {
+            player.setVelocityX(velocity.x);
         }
 
         if (cursors.up.isDown) {
             player.setVelocityY(-160);
         } else if (cursors.down.isDown) {
             player.setVelocityY(160);
+        } else {
+            player.setVelocityY(velocity.y);
         }
     }
 
@@ -81,7 +119,6 @@
         }
     });
 
-    // Resize the game when the window size changes
     window.addEventListener('resize', () => {
         game.scale.resize(window.innerWidth, window.innerHeight);
     });
